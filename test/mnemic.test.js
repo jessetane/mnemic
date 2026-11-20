@@ -112,6 +112,12 @@ function createMockGemini (tmpDir, geminiDir) {
 				thinking: 'checking geometry',
 				content: 'fixed edge_array',
 				tool_calls: [{ name: 'read_file', args: { Path: '/a.py' } }]
+			}),
+			JSON.stringify({
+				step_index: 3,
+				type: 'ERROR_MESSAGE',
+				created_at: '2026-09-02T14:21:30Z',
+				content: 'rate limit exceeded'
 			})
 		].join('\n') + '\n'
 	)
@@ -122,14 +128,16 @@ function createMockGemini (tmpDir, geminiDir) {
 		path.join(subBrain, '.system_generated', 'logs', 'transcript_full.jsonl'),
 		JSON.stringify({ step_index: 0, type: 'USER_INPUT', content: 'sub' }) + '\n'
 	)
-	return { rootBrain, transcriptPath }
+	return { rootBrain, transcriptPath, specPath }
 }
 
 function createMockClaude (tmpDir, claudeDir) {
 	const projDir = path.join(claudeDir, 'projects', '-Users-jesse-src-wye')
+	const memDir = path.join(projDir, 'memory')
 	const skillDir = path.join(claudeDir, 'skills', 'wye')
-	fs.mkdirSync(projDir, { recursive: true })
+	fs.mkdirSync(memDir, { recursive: true })
 	fs.mkdirSync(skillDir, { recursive: true })
+	fs.writeFileSync(path.join(memDir, 'MEMORY.md'), '# Project Memory\n')
 	fs.writeFileSync(path.join(claudeDir, 'settings.json'), '{"theme":"dark"}\n')
 	fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# Wye\n')
 	fs.writeFileSync(
@@ -169,7 +177,13 @@ function createMockClaude (tmpDir, claudeDir) {
 				isSidechain: false,
 				timestamp: '2026-09-02T14:21:00Z',
 				cwd: '/Users/jesse/src/wye',
-				message: { role: 'user', content: 'summarize wye relay protocol' }
+				message: {
+					role: 'user',
+					content: [
+						{ type: 'text', text: 'summarize wye relay protocol' },
+						{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: Buffer.from('png-bytes').toString('base64') } }
+					]
+				}
 			}),
 			JSON.stringify({
 				uuid: 'a1_think',
@@ -328,7 +342,10 @@ function createMockGoose (gooseDataDir, gooseConfigDir) {
 	insertMsg.run(
 		'20260902_3',
 		'user',
-		JSON.stringify([{ type: 'text', text: 'what color is the sky' }]),
+		JSON.stringify([
+			{ type: 'text', text: 'what color is the sky' },
+			{ type: 'image', mimeType: 'image/jpeg', data: Buffer.from('jpg-bytes').toString('base64') }
+		]),
 		1791003958,
 		'2026-09-02 14:24:58',
 		JSON.stringify({ userVisible: true })
@@ -366,7 +383,7 @@ test('normalizes Antigravity, Claude Code, and Goose with rewinds, coalescing, s
 		const gooseDataDir = path.join(tmp, 'goose-data')
 		const gooseConfigDir = path.join(tmp, 'goose-config')
 		const targetDir = path.join(tmp, 'archive')
-		const { rootBrain, transcriptPath } = createMockGemini(tmp, geminiDir)
+		const { rootBrain, transcriptPath, specPath } = createMockGemini(tmp, geminiDir)
 		const { rootSession } = createMockClaude(tmp, claudeDir)
 		const { dbPath: gooseDb } = createMockGoose(gooseDataDir, gooseConfigDir)
 		const first = sync({ targetDir, geminiDir, claudeDir, gooseDataDir, gooseConfigDir })
@@ -383,34 +400,47 @@ test('normalizes Antigravity, Claude Code, and Goose with rewinds, coalescing, s
 		assert.equal(fs.existsSync(path.join(targetDir, 'gemini', 'config', 'skills', 'demo', 'SKILL.md')), true)
 		assert.equal(fs.existsSync(path.join(targetDir, 'gemini', 'config', 'skills', 'linked-valid')), false)
 		assert.equal(fs.existsSync(path.join(targetDir, 'gemini', 'config', 'skills', 'linked-dangling')), false)
+		assert.equal(fs.existsSync(path.join(targetDir, 'claude', 'memory', '-Users-jesse-src-wye', 'MEMORY.md')), true)
 		const mcpPath = path.join(targetDir, 'claude', 'mcp.json')
 		assert.equal(fs.existsSync(mcpPath), true)
 		assert.equal(fs.statSync(mcpPath).mode & 0o777, 0o600)
 		const agyLines = fs.readFileSync(agyTranscript, 'utf8').trim().split('\n').map(l => JSON.parse(l))
-		assert.deepEqual(agyLines.map(l => l.type), ['meta', 'user', 'assistant'])
+		assert.deepEqual(agyLines.map(l => l.type), ['meta', 'user', 'assistant', 'error'])
 		assert.equal(agyLines[0].harness, 'antigravity-cli')
 		assert.deepEqual(agyLines[0].artifacts, ['artifacts/spec.md'])
 		assert.deepEqual(agyLines[0].workspaces, ['/Users/jesse/src/my cad'])
 		assert.equal(agyLines[1].content, 'fix edge_array')
 		assert.deepEqual(agyLines[1].attachments, ['uploads/pasted_123.jpg', '/Users/jesse/Downloads/drawing.pdf'])
 		assert.equal(agyLines[2].content, 'fixed edge_array')
-		const claudeTranscript = path.join(targetDir, 'claude', 'conversations', '22222222-3333-4444-5555-666666666666', 'transcript.jsonl')
+		assert.equal(agyLines[3].content, 'rate limit exceeded')
+		const claudeConvDir = path.join(targetDir, 'claude', 'conversations', '22222222-3333-4444-5555-666666666666')
+		const claudeTranscript = path.join(claudeConvDir, 'transcript.jsonl')
 		const claudeLines = fs.readFileSync(claudeTranscript, 'utf8').trim().split('\n').map(l => JSON.parse(l))
 		assert.deepEqual(claudeLines.map(l => l.type), ['meta', 'user', 'assistant', 'user'])
 		assert.equal(claudeLines[0].harness, 'claude')
 		assert.equal(claudeLines[0].title, 'Wye Relay Summary')
 		assert.equal(claudeLines[1].content, 'summarize wye relay protocol')
+		assert.deepEqual(claudeLines[1].attachments, ['uploads/upload-1.png'])
+		assert.equal(fs.readFileSync(path.join(claudeConvDir, 'uploads', 'upload-1.png'), 'utf8'), 'png-bytes')
 		assert.equal(claudeLines[2].thinking, 'inspecting relay')
 		assert.equal(claudeLines[2].content, 'wye uses E2EE websocket rooms')
 		assert.equal(claudeLines[2].toolCalls[0].name, 'Read')
 		assert.equal(claudeLines[3].content, 'hello from guest')
-		const gooseTranscript = path.join(targetDir, 'goose', 'conversations', '20260902_3', 'transcript.jsonl')
+		const gooseConvDir = path.join(targetDir, 'goose', 'conversations', '20260902_3')
+		const gooseTranscript = path.join(gooseConvDir, 'transcript.jsonl')
 		const gooseLines = fs.readFileSync(gooseTranscript, 'utf8').trim().split('\n').map(l => JSON.parse(l))
 		assert.deepEqual(gooseLines.map(l => l.type), ['meta', 'user', 'assistant'])
 		assert.equal(gooseLines[0].harness, 'goose')
+		assert.deepEqual(gooseLines[1].attachments, ['uploads/upload-1.jpg'])
+		assert.equal(fs.readFileSync(path.join(gooseConvDir, 'uploads', 'upload-1.jpg'), 'utf8'), 'jpg-bytes')
 		const second = sync({ targetDir, geminiDir, claudeDir, gooseDataDir, gooseConfigDir })
 		assert.equal(second.archived, 0)
 		assert.equal(second.unchanged, 4)
+		fs.writeFileSync(specPath, '# Spec v2\n')
+		backdate(specPath, PAST_SEC + 30)
+		const afterArtUpdate = sync({ targetDir, geminiDir, claudeDir, gooseDataDir, gooseConfigDir })
+		assert.equal(afterArtUpdate.archived, 1)
+		assert.equal(fs.readFileSync(path.join(agyDir, 'artifacts', 'spec.md'), 'utf8'), '# Spec v2\n')
 		fs.appendFileSync(transcriptPath, '{"step_index":2,"type":"PLANNER_RESPONSE","content":"half-written')
 		backdate(transcriptPath, PAST_SEC + 60)
 		const midWrite = sync({ targetDir, geminiDir, claudeDir, gooseDataDir, gooseConfigDir })

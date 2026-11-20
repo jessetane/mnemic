@@ -1,0 +1,19 @@
+{
+	"name": "mnemic",
+	"version": "0.1.0",
+	"description": "Additive, plain-file archive for local AI agent brains and conversations",
+	"type": "module",
+	"bin": {
+		"mnemic": "./bin/mnemic.js"
+	},
+	"exports": "./lib/index.js",
+	"scripts": {
+		"test": "node --test"
+	},
+	"repository": "https://github.com/jessetane/mnemic",
+	"author": "jesse.tane@gmail.com",
+	"license": "MIT",
+	"engines": {
+		"node": ">=22.16.0"
+	}
+}

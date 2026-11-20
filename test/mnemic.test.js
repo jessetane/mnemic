@@ -128,6 +128,14 @@ function createMockGemini (tmpDir, geminiDir) {
 		path.join(subBrain, '.system_generated', 'logs', 'transcript_full.jsonl'),
 		JSON.stringify({ step_index: 0, type: 'USER_INPUT', content: 'sub' }) + '\n'
 	)
+	const midSpawnBrain = path.join(brainRoot, 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff')
+	fs.mkdirSync(path.join(midSpawnBrain, '.system_generated', 'logs'), { recursive: true })
+	const midSpawnTranscript = path.join(midSpawnBrain, '.system_generated', 'logs', 'transcript_full.jsonl')
+	fs.writeFileSync(
+		midSpawnTranscript,
+		JSON.stringify({ step_index: 0, type: 'SYSTEM_MESSAGE', content: '<SYSTEM_MESSAGE>\nworker\n</SYSTEM_MESSAGE>' }) + '\n'
+	)
+	backdate(midSpawnTranscript)
 	return { rootBrain, transcriptPath, specPath }
 }
 
@@ -388,7 +396,7 @@ test('normalizes Antigravity, Claude Code, and Goose with rewinds, coalescing, s
 		const { dbPath: gooseDb } = createMockGoose(gooseDataDir, gooseConfigDir)
 		const first = sync({ targetDir, geminiDir, claudeDir, gooseDataDir, gooseConfigDir })
 		assert.equal(first.archived, 4)
-		assert.equal(first.skippedSubagents, 3)
+		assert.equal(first.skippedSubagents, 4)
 		assert.equal(first.artifacts, 1)
 		const agyDir = path.join(targetDir, 'gemini', 'antigravity-cli', 'conversations', '11111111-2222-3333-4444-555555555555')
 		const agyTranscript = path.join(agyDir, 'transcript.jsonl')

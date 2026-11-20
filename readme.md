@@ -31,10 +31,10 @@ Override harness locations:
 
 ```sh
 mnemic ./archive \
-    --gemini ~/.gemini \
-    --claude ~/.claude \
-    --goose-data ~/.local/share/goose \
-    --goose-config ~/.config/goose
+	--gemini ~/.gemini \
+	--claude ~/.claude \
+	--goose-data ~/.local/share/goose \
+	--goose-config ~/.config/goose
 ```
 
 Search conversations:
@@ -49,8 +49,8 @@ grep -ri "freecad" /Volumes/Backup/ai
 import { sync } from 'mnemic'
 
 const stats = sync({
-    harnesses: ['antigravity-cli', 'claude'],
-    targetDir: '/Volumes/Backup/ai'
+	harnesses: ['antigravity-cli', 'claude'],
+	targetDir: '/Volumes/Backup/ai'
 })
 console.log(stats)
 ```

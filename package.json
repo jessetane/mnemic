@@ -1,7 +1,7 @@
 {
 	"name": "mnemic",
 	"version": "0.1.0",
-	"description": "Plain-file backups for local AI agents",
+	"description": "Plain-file backups for local agent harnesses",
 	"type": "module",
 	"bin": {
 		"mnemic": "./bin/mnemic.js"

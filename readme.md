@@ -1,5 +1,5 @@
 # mnemic
-Plain-file backups for local AI agents.
+Plain-file backups for local agent harnesses.
 
 ## Why
 Local harnesses scatter your conversation data across hidden directories full of caches, binary blobs and gigabytes of raw tool output, sometimes silently evicting it along with any of your otherwise uncaptured knowledge, discoveries or inventions. `mnemic` pulls out just the parts worth saving into plain files and normalized JSONL transcripts so you can keep them somewhere safe.

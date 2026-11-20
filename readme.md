@@ -1,16 +1,15 @@
 # mnemic
-
-Additive, plain-file archive for local AI agent brains and conversations.
+Plain-file backups for local AI agents.
 
 ## Why
-
-Local-first coding and desktop agents (**Antigravity**, **Claude Code**, **Goose**) store your conversation history, rules, skills, memories, and MCP configs only on your machine—with no built-in cloud backup, opaque binary caches, gigabytes of raw tool-output exhaust, and silent LRU eviction caps (Antigravity evicts past ~500 sessions, including subagents). `mnemic` extracts the signal into one clean, portable JSONL layout that survives eviction and works natively with `grep` and `git`.
+Local harnesses scatter your conversation data across hidden directories full of caches, binary blobs and gigabytes of raw tool output, sometimes silently evicting it along with any of your otherwise uncaptured knowledge, discoveries or inventions. `mnemic` pulls out just the parts worth saving into plain files and normalized JSONL transcripts so you can keep them somewhere safe.
 
 ## How
 
-* Zero-dependency CLI and module built on Node's native `node:sqlite` and `node:fs`.
-* Discovers `~/.gemini`, `~/.claude`, and `~/.local/share/goose` + `~/.config/goose` automatically, mirroring user-authored configs, rules, skills, and memories while skipping symlinks, subagent sidechains, caches, scratch dirs, and raw tool-result stdout walls.
-* Writes each root session atomically to `conversations/<id>/transcript.jsonl` alongside optional `artifacts/` and `uploads/` subdirectories, preserving original `mtime` for fast incremental runs and never deleting evicted sessions.
+* Zero-dependency CLI and module built on `node:sqlite` and `node:fs`.
+* Pulls configs, rules, skills, memories, artifacts, and uploads from Antigravity(`-cli`), Claude Code, and Goose.
+* Normalizes root conversations to `conversations/<id>/transcript.jsonl`, skipping caches, subagent noise, and raw tool stdout.
+* Incremental and additive so `grep`, `rsync`, and `git` just work.
 
 ## Install
 
@@ -25,25 +24,23 @@ npm i -g github:jessetane/mnemic
 ```sh
 mnemic /Volumes/Backup/ai
 mnemic /Volumes/Backup/ai -h gemini,claude
-mnemic /Volumes/Backup/ai -h antigravity-cli -h goose
+mnemic /Volumes/Backup/ai -h antigravity,antigravity-cli -h goose
 ```
 
-Supported `-h` / `--harness` values: `gemini` (all Antigravity surfaces), `antigravity`, `antigravity-cli`, `claude`, `goose`.
-
-Search archived sessions with `grep`:
-
-```sh
-grep -ri "freecad" /Volumes/Backup/ai
-```
-
-Override default source locations if needed:
+Override harness locations:
 
 ```sh
 mnemic ./archive \
-	--gemini ~/.gemini \
-	--claude ~/.claude \
-	--goose-data ~/.local/share/goose \
-	--goose-config ~/.config/goose
+    --gemini ~/.gemini \
+    --claude ~/.claude \
+    --goose-data ~/.local/share/goose \
+    --goose-config ~/.config/goose
+```
+
+Search conversations:
+
+```sh
+grep -ri "freecad" /Volumes/Backup/ai
 ```
 
 ### As a JavaScript module
@@ -52,13 +49,15 @@ mnemic ./archive \
 import { sync } from 'mnemic'
 
 const stats = sync({
-	targetDir: '/Volumes/Backup/ai',
-	harnesses: ['antigravity-cli', 'claude']
+    harnesses: ['antigravity-cli', 'claude'],
+    targetDir: '/Volumes/Backup/ai'
 })
 console.log(stats)
 ```
 
-## Output Layout
+## Output
+
+### Directory layout
 
 ```text
 <target-dir>/
@@ -86,11 +85,18 @@ console.log(stats)
     └── conversations/<id>/transcript.jsonl
 ```
 
-Every `transcript.jsonl` starts with a `meta` line (`id`, `harness`, `date`, `title`, `preview`, `workspaces`, `turns`, `artifacts`), followed by normalized `user` (`content`, `attachments?`), `assistant` (`model?`, `thinking?`, `content?`, `toolCalls?`), and `error` (`content`) records.
+### Transcript schema
+
+```json
+{"type":"meta","id":"...","harness":"claude","date":"2026-11-19","title":"...","preview":"...","workspaces":["..."],"turns":2,"artifacts":["..."]}
+{"type":"user","timestamp":"2026-11-19T20:00:00Z","content":"...","attachments":["uploads/upload-1.pdf"]}
+{"type":"assistant","timestamp":"2026-11-19T20:00:05Z","model":"...","thinking":"...","content":"...","toolCalls":[{"name":"...","args":{}}]}
+{"type":"error","timestamp":"2026-11-19T20:00:09Z","content":"..."}
+```
 
 ## Adding Harnesses
 
-Each harness lives in a single self-contained module under [`lib/harnesses/`](lib/harnesses) using helpers from [`lib/store.js`](lib/store.js). PRs for additional local-first agents (`pi`, `codex`, `opencode`, etc.) are welcome.
+Harness adapters live in [`lib/harnesses/`](lib/harnesses) and use helpers from [`lib/store.js`](lib/store.js). Patches welcome to add additional harnesses like `pi`, `codex`, `opencode`, etc.
 
 ## Test
 

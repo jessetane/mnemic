@@ -104,6 +104,10 @@ Harness adapters live in [`lib/harnesses/`](lib/harnesses) and use helpers from 
 npm test
 ```
 
+## Security
+
+Backups skip OAuth token stores, but include your private conversation transcripts, uploads, and declarative MCP and provider configs (which may contain static bearer tokens or env keys). Treat `<target-dir>` accordingly and don't push it to a public or shared git remote.
+
 ## License
 
 MIT

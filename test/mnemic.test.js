@@ -55,7 +55,7 @@ function createMockGemini (tmpDir, geminiDir) {
 	insert.run(
 		'11111111-2222-3333-4444-555555555555',
 		'Fix FreeCAD EdgeArray Script',
-		'Working on edge_array in FreeCAD',
+		'Fix FreeCAD EdgeArray Script',
 		10,
 		'2026-09-02 14:25:00+00:00',
 		'["file:///Users/jesse/src/my%20cad"]',
@@ -88,8 +88,8 @@ function createMockGemini (tmpDir, geminiDir) {
 			JSON.stringify({
 				step_index: 0,
 				type: 'USER_INPUT',
-				created_at: '2026-09-02T14:20:00Z',
-				content: '<USER_REQUEST>\nfix edge_array\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-09-02\n</ADDITIONAL_METADATA>',
+				created_at: '2026-09-01T23:55:00Z',
+				content: '<USER_REQUEST>\nfix edge_array\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-09-01\n</ADDITIONAL_METADATA>',
 				media: [
 					{ mime_type: 'image/jpeg', uri: path.join(rootBrain, '.user_uploaded', 'pasted_123.jpg') },
 					{ mime_type: 'image/png', uri: path.join(rootBrain, '.user_uploaded', 'missing_gone.png') },
@@ -175,7 +175,7 @@ function createMockClaude (tmpDir, claudeDir) {
 				parentUuid: null,
 				type: 'user',
 				isSidechain: false,
-				timestamp: '2026-09-02T14:21:00Z',
+				timestamp: '2026-09-01T23:58:00Z',
 				cwd: '/Users/jesse/src/wye',
 				message: {
 					role: 'user',
@@ -407,6 +407,8 @@ test('normalizes Antigravity, Claude Code, and Goose with rewinds, coalescing, s
 		const agyLines = fs.readFileSync(agyTranscript, 'utf8').trim().split('\n').map(l => JSON.parse(l))
 		assert.deepEqual(agyLines.map(l => l.type), ['meta', 'user', 'assistant', 'error'])
 		assert.equal(agyLines[0].harness, 'antigravity-cli')
+		assert.equal(agyLines[0].date, '2026-09-01')
+		assert.equal(agyLines[0].preview, 'fix edge_array')
 		assert.deepEqual(agyLines[0].artifacts, ['artifacts/spec.md'])
 		assert.deepEqual(agyLines[0].workspaces, ['/Users/jesse/src/my cad'])
 		assert.equal(agyLines[1].content, 'fix edge_array')
@@ -418,6 +420,7 @@ test('normalizes Antigravity, Claude Code, and Goose with rewinds, coalescing, s
 		const claudeLines = fs.readFileSync(claudeTranscript, 'utf8').trim().split('\n').map(l => JSON.parse(l))
 		assert.deepEqual(claudeLines.map(l => l.type), ['meta', 'user', 'assistant', 'user'])
 		assert.equal(claudeLines[0].harness, 'claude')
+		assert.equal(claudeLines[0].date, '2026-09-01')
 		assert.equal(claudeLines[0].title, 'Wye Relay Summary')
 		assert.equal(claudeLines[1].content, 'summarize wye relay protocol')
 		assert.deepEqual(claudeLines[1].attachments, ['uploads/upload-1.png'])

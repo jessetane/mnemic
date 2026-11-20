@@ -222,8 +222,37 @@ function createMockClaude (tmpDir, claudeDir) {
 				}
 			}),
 			JSON.stringify({
-				uuid: 'u4_peer',
+				uuid: 'sys_turn_1',
 				parentUuid: 'a1_text',
+				type: 'system',
+				subtype: 'turn_duration',
+				isSidechain: false,
+				timestamp: '2026-09-02T14:21:11Z'
+			}),
+			JSON.stringify({
+				uuid: 'u_abandoned',
+				parentUuid: 'sys_turn_1',
+				type: 'user',
+				isSidechain: false,
+				timestamp: '2026-09-02T14:21:15Z',
+				message: { role: 'user', content: 'abandoned mid-session branch' }
+			}),
+			JSON.stringify({
+				uuid: 'a_abandoned',
+				parentUuid: 'u_abandoned',
+				type: 'assistant',
+				isSidechain: false,
+				timestamp: '2026-09-02T14:21:16Z',
+				message: {
+					id: 'msg_abandoned',
+					role: 'assistant',
+					model: 'claude-opus-4-6',
+					content: [{ type: 'text', text: 'abandoned reply' }]
+				}
+			}),
+			JSON.stringify({
+				uuid: 'u4_peer',
+				parentUuid: 'sys_turn_1',
 				type: 'user',
 				isMeta: true,
 				origin: { kind: 'peer' },
